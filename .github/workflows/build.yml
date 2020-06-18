@@ -1,0 +1,22 @@
+name: Build for OpenWrt 19.07
+on:
+  push:
+  pull_request:
+    types: [opened, synchronize, reopened]
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download OpenWrt SDK
+        run: curl -o openwrt-sdk.tar.xz https://downloads.openwrt.org/releases/19.07.3/targets/ramips/mt76x8/openwrt-sdk-19.07.3-ramips-mt76x8_gcc-7.5.0_musl.Linux-x86_64.tar.xz
+      - name: Extract OpenWrt SDK
+        run: tar xf openwrt-sdk.tar.xz && mv openwrt-sdk-19.07.3-ramips-mt76x8_gcc-7.5.0_musl.Linux-x86_64 sdk
+      - name: Compile
+        run: make CC=$(pwd)/sdk/staging_dir/toolchain-mipsel_24kc_gcc-7.5.0_musl/bin/mipsel-openwrt-linux-gcc
+      - name: Archive build output
+        uses: actions/upload-artifact@v1
+        with:
+          name: output
+          path: out
