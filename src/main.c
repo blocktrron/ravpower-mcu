@@ -78,7 +78,7 @@ static int read_pmic_status(int i2c_fd, struct ravpower_pmic_status *buf)
 	i2c_wr(i2c_fd, RAVPOWER_PMIC_BATTERY_VOLUME_REG, (char *)&buf->battery_volume);
 }
 
-static int dump_pmic_status(int i2c_fd)
+static int cmd_dump(int i2c_fd)
 {
 	struct ravpower_pmic_status pmic_status;
 
@@ -122,7 +122,7 @@ int main (int argc, char* argv[])
 	if (!strcmp(command, "poweroff")) {
 		cmd_poweroff(i2c_fd);
 	} else {
-		dump_pmic_status(i2c_fd);
+		cmd_dump(i2c_fd);
 	}
 
 	i2c_close(i2c_fd);
