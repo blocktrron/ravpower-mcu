@@ -94,6 +94,15 @@ static int cmd_poweroff(int i2c_fd)
 	i2c_w(i2c_fd, RAVPOWER_PMIC_CMD_POWER_LED_REG);
 }
 
+static int cmd_battery_charge(int i2c_fd)
+{
+	struct ravpower_pmic_status pmic_status;
+
+	read_pmic_status(i2c_fd, &pmic_status);
+
+	printf("%d\n", pmic_status.battery_volume);
+}
+
 int main (int argc, char* argv[])
 {
 	const char *default_command = "dump";
@@ -109,6 +118,7 @@ int main (int argc, char* argv[])
 		printf("Avbailable commands:\n");
 		printf("\tdump\t\tDump PMIC status\n");
 		printf("\tpoweroff\tTurn off the device\n");
+		printf("\tbattery-charge\tPrint battery charge in percent\n");
 	} else {
 		command = argv[1];
 	}
@@ -121,6 +131,8 @@ int main (int argc, char* argv[])
 
 	if (!strcmp(command, "poweroff")) {
 		cmd_poweroff(i2c_fd);
+	} else if (!strcmp(command, "battery-charge")) {
+		cmd_battery_charge(i2c_fd);
 	} else {
 		cmd_dump(i2c_fd);
 	}
