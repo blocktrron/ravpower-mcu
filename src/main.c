@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <linux/i2c.h>
@@ -48,10 +49,19 @@ static int i2c_set_address(int i2c_fd, long address)
 	}
 }
 
-static int i2c_rw(int i2c_fd, char addr, char *buf)
+static int i2c_w(int i2c_fd, char addr)
 {
 	if (write(i2c_fd, &addr, 1) != 1) {
-		perror("i2c_rw");
+		perror("i2c_w");
+		return -1;
+	}
+
+	return 0;
+}
+
+static int i2c_rw(int i2c_fd, char addr, char *buf)
+{
+	if (i2c_w(i2c_fd, addr)) {
 		return -1;
 	}
 
@@ -79,17 +89,29 @@ static int dump_pmic_status(int i2c_fd)
 	printf("Charging:\t %s\n", RAVPOWER_PMIC_DEVICE_STATUS_CHARGING(pmic_status.device_status) ? "Yes" : "No");
 }
 
+static int cmd_poweroff(int i2c_fd)
+{
+	i2c_w(i2c_fd, RAVPOWER_PMIC_CMD_SHUTDOWN_REG);
+	i2c_w(i2c_fd, RAVPOWER_PMIC_CMD_POWER_LED_REG);
+}
+
 int main (int argc, char* argv[])
 {
+	const char *default_command = "dump";
 	const char *device = DEFAULT_I2C_PATH;
-	char *command = NULL;
+	char *command = default_command;
 	int i2c_fd;
 	char buf;
+
+	command = default_command;
 
 	if (argc < 2) {
 		printf("Usage: %s [command]\n", argv[0]);
 		printf("Avbailable commands:\n");
-		printf("\tdump\tDump PMIC status");
+		printf("\tdump\t\tDump PMIC status\n");
+		printf("\tpoweroff\tTurn off the device\n");
+	} else {
+		command = argv[1];
 	}
 
 	i2c_fd = i2c_open(device);
@@ -97,7 +119,12 @@ int main (int argc, char* argv[])
 		return 1;
 
 	i2c_set_address(i2c_fd, RAVPOWER_PMIC_I2C_ADDRESS);
-	dump_pmic_status(i2c_fd);
+
+	if (!strcmp(command, "poweroff")) {
+		cmd_poweroff(i2c_fd);
+	} else {
+		dump_pmic_status(i2c_fd);
+	}
 
 	i2c_close(i2c_fd);
 	return 0;
