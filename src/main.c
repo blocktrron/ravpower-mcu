@@ -59,11 +59,10 @@ static int i2c_w(int i2c_fd, char addr)
 	return 0;
 }
 
-static int i2c_rw(int i2c_fd, char addr, char *buf)
+static int i2c_wr(int i2c_fd, char reg, char *buf)
 {
-	if (i2c_w(i2c_fd, addr)) {
+	if (i2c_w(i2c_fd, reg))
 		return -1;
-	}
 
 	if (read(i2c_fd, buf, 1) != 1) {
 		perror("i2c_rw");
@@ -75,8 +74,8 @@ static int i2c_rw(int i2c_fd, char addr, char *buf)
 
 static int read_pmic_status(int i2c_fd, struct ravpower_pmic_status *buf)
 {
-	i2c_rw(i2c_fd, RAVPOWER_PMIC_DEVICE_STATUS_REG, &buf->device_status);
-	i2c_rw(i2c_fd, RAVPOWER_PMIC_BATTERY_VOLUME_REG, (char *)&buf->battery_volume);
+	i2c_wr(i2c_fd, RAVPOWER_PMIC_DEVICE_STATUS_REG, &buf->device_status);
+	i2c_wr(i2c_fd, RAVPOWER_PMIC_BATTERY_VOLUME_REG, (char *)&buf->battery_volume);
 }
 
 static int dump_pmic_status(int i2c_fd)
