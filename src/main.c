@@ -78,6 +78,16 @@ static int read_pmic_status(int i2c_fd, struct ravpower_pmic_status *buf)
 	i2c_wr(i2c_fd, RAVPOWER_PMIC_BATTERY_VOLUME_REG, (char *)&buf->battery_volume);
 }
 
+static int cmd_help(char *app_path)
+{
+	printf("Usage: %s [command]\n", app_path);
+	printf("Avbailable commands:\n");
+	printf("\tdump\t\t\tDump PMIC status\n");
+	printf("\tpoweroff\t\tTurn off the device\n");
+	printf("\tbattery-charge\t\tPrint battery charge in percent\n");
+	printf("\tbattery-charging\tPrint battery charging status\n");
+}
+
 static int cmd_dump(int i2c_fd)
 {
 	struct ravpower_pmic_status pmic_status;
@@ -114,24 +124,17 @@ static int cmd_battery_charging(int i2c_fd)
 
 int main (int argc, char* argv[])
 {
-	const char *default_command = "dump";
 	const char *device = DEFAULT_I2C_PATH;
-	char *command = default_command;
+	char *command = NULL;
 	int i2c_fd;
 	char buf;
 
-	command = default_command;
-
 	if (argc < 2) {
-		printf("Usage: %s [command]\n", argv[0]);
-		printf("Avbailable commands:\n");
-		printf("\tdump\t\t\tDump PMIC status\n");
-		printf("\tpoweroff\t\tTurn off the device\n");
-		printf("\tbattery-charge\t\tPrint battery charge in percent\n");
-		printf("\tbattery-charging\tPrint battery charging status\n");
-	} else {
-		command = argv[1];
+		cmd_help(argv[0]);
+		return 1;
 	}
+
+	command = argv[1];
 
 	i2c_fd = i2c_open(device);
 	if (i2c_fd == -1)
@@ -145,8 +148,10 @@ int main (int argc, char* argv[])
 		cmd_battery_charge(i2c_fd);
 	} else if (!strcmp(command, "battery-charging")) {
 		cmd_battery_charging(i2c_fd);
-	} else {
+	} else if(!strcmp(command, "dump")) {
 		cmd_dump(i2c_fd);
+	} else {
+		cmd_help(argv[0]);
 	}
 
 	i2c_close(i2c_fd);
