@@ -47,6 +47,8 @@ static int i2c_set_address(int i2c_fd, long address)
 		perror("i2c_set_address");
 		return -1;
 	}
+
+	return 0;
 }
 
 static int i2c_w(int i2c_fd, char addr)
@@ -74,8 +76,15 @@ static int i2c_wr(int i2c_fd, char reg, char *buf)
 
 static int read_pmic_status(int i2c_fd, struct ravpower_pmic_status *buf)
 {
-	i2c_wr(i2c_fd, RAVPOWER_PMIC_DEVICE_STATUS_REG, &buf->device_status);
-	i2c_wr(i2c_fd, RAVPOWER_PMIC_BATTERY_VOLUME_REG, (char *)&buf->battery_volume);
+	int ret;
+
+	ret = i2c_wr(i2c_fd, RAVPOWER_PMIC_DEVICE_STATUS_REG, &buf->device_status);
+	if (ret)
+		return ret;
+
+	ret = i2c_wr(i2c_fd, RAVPOWER_PMIC_BATTERY_VOLUME_REG, (char *)&buf->battery_volume);
+
+	return ret;
 }
 
 static int cmd_help(char *app_path)
@@ -86,40 +95,64 @@ static int cmd_help(char *app_path)
 	printf("\tpoweroff\t\tTurn off the device\n");
 	printf("\tbattery-charge\t\tPrint battery charge in percent\n");
 	printf("\tbattery-charging\tPrint battery charging status\n");
+
+	return 0;
 }
 
 static int cmd_dump(int i2c_fd)
 {
 	struct ravpower_pmic_status pmic_status;
+	int ret;
 
-	read_pmic_status(i2c_fd, &pmic_status);
+	ret = read_pmic_status(i2c_fd, &pmic_status);
+	if (ret)
+		return ret;
 
 	printf("Charge:\t\t %d%%\n", pmic_status.battery_volume);
 	printf("Charging:\t %s\n", RAVPOWER_PMIC_DEVICE_STATUS_CHARGING(pmic_status.device_status) ? "Yes" : "No");
+
+	return 0;
 }
 
 static int cmd_poweroff(int i2c_fd)
 {
-	i2c_w(i2c_fd, RAVPOWER_PMIC_CMD_SHUTDOWN_REG);
-	i2c_w(i2c_fd, RAVPOWER_PMIC_CMD_POWER_LED_REG);
+	int ret;
+
+	ret = i2c_w(i2c_fd, RAVPOWER_PMIC_CMD_SHUTDOWN_REG);
+	if (ret)
+		return ret;
+
+	ret = i2c_w(i2c_fd, RAVPOWER_PMIC_CMD_POWER_LED_REG);
+
+	return ret;
 }
 
 static int cmd_battery_charge(int i2c_fd)
 {
 	struct ravpower_pmic_status pmic_status;
+	int ret;
 
-	read_pmic_status(i2c_fd, &pmic_status);
+	ret = read_pmic_status(i2c_fd, &pmic_status);
+	if (ret)
+		return ret;
 
 	printf("%d\n", pmic_status.battery_volume);
+
+	return ret;
 }
 
 static int cmd_battery_charging(int i2c_fd)
 {
 	struct ravpower_pmic_status pmic_status;
+	int ret;
 
-	read_pmic_status(i2c_fd, &pmic_status);
+	ret = read_pmic_status(i2c_fd, &pmic_status);
+	if (ret)
+		return ret;
 
 	printf("%d\n", !!RAVPOWER_PMIC_DEVICE_STATUS_CHARGING(pmic_status.device_status));
+
+	return ret;
 }
 
 int main (int argc, char* argv[])
@@ -127,7 +160,7 @@ int main (int argc, char* argv[])
 	const char *device = DEFAULT_I2C_PATH;
 	char *command = NULL;
 	int i2c_fd;
-	char buf;
+	int ret;
 
 	if (argc < 2) {
 		cmd_help(argv[0]);
@@ -140,7 +173,9 @@ int main (int argc, char* argv[])
 	if (i2c_fd == -1)
 		return 1;
 
-	i2c_set_address(i2c_fd, RAVPOWER_PMIC_I2C_ADDRESS);
+	ret = i2c_set_address(i2c_fd, RAVPOWER_PMIC_I2C_ADDRESS);
+	if (ret)
+		return ret;
 
 	if (!strcmp(command, "poweroff")) {
 		cmd_poweroff(i2c_fd);
